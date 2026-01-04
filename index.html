@@ -5,173 +5,304 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Gym Log</title>
+    <title>Workout Tracker</title>
     <style>
         :root {
-            --bg-color: #121212;
-            --card-color: #1e1e1e;
+            --bg-color: #000000;
+            --card-bg: #1c1c1e;
             --primary: #0A84FF;
+            --danger: #FF453A;
             --text-main: #ffffff;
-            --text-sub: #a0a0a0;
+            --text-sub: #8e8e93;
+            --border: #38383a;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0;
             padding: 20px;
-            padding-top: 60px; /* Space for status bar */
-            -webkit-tap-highlight-color: transparent;
+            padding-top: 50px; /* Safe area for notch */
+            padding-bottom: 80px;
         }
-        h1 { font-size: 24px; margin-bottom: 20px; font-weight: 700; }
         
-        /* Input Form Styles */
-        .input-group {
-            background: var(--card-color);
-            padding: 15px;
+        /* Views Utility */
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 16px;
             border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 10px;
-            background: #2c2c2e;
             border: none;
-            border-radius: 8px;
-            color: white;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        input:focus { outline: 2px solid var(--primary); }
-        
-        button#log-btn {
-            width: 100%;
-            padding: 14px;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 600;
             cursor: pointer;
+            margin-bottom: 15px;
         }
-        button#log-btn:active { opacity: 0.8; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-secondary { background: var(--card-bg); color: var(--primary); }
+        .btn-small { width: auto; padding: 8px 16px; font-size: 14px; margin: 0; }
 
-        /* Log List Styles */
-        h2 { font-size: 18px; color: var(--text-sub); margin-bottom: 10px; }
-        #log-list { list-style: none; padding: 0; }
-        
-        .log-item {
-            background: var(--card-color);
-            padding: 15px;
+        /* Inputs */
+        input, textarea {
+            width: 100%;
+            padding: 14px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
             border-radius: 10px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            animation: fadeIn 0.3s ease;
-        }
-        .log-info { display: flex; flex-direction: column; }
-        .log-exercise { font-weight: 600; font-size: 17px; }
-        .log-details { color: var(--text-sub); font-size: 14px; margin-top: 4px; }
-        .delete-btn {
-            background: #ff453a;
             color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            margin-left: 10px;
+            font-size: 16px;
+            margin-bottom: 12px;
+            box-sizing: border-box;
         }
+        input:focus { outline: 2px solid var(--primary); border-color: transparent; }
+        .row { display: flex; gap: 10px; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Cards (History items) */
+        .card {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .card-title { font-size: 18px; font-weight: 700; }
+        .card-date { color: var(--text-sub); font-size: 14px; }
+        
+        /* Exercise Grouping in History */
+        .exercise-group { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+        .exercise-name { font-weight: 600; color: var(--primary); font-size: 16px; margin-bottom: 4px; }
+        .set-line { font-size: 14px; color: var(--text-sub); display: flex; justify-content: space-between; margin-bottom: 2px; }
+        .note-text { font-size: 12px; color: #aaa; font-style: italic; }
+
+        /* FAB (Floating Action Button) */
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 4px 12px rgba(10, 132, 255, 0.4);
+            border: none;
+            cursor: pointer;
+            z-index: 100;
+        }
     </style>
 </head>
 <body>
 
-    <h1>Workout Logger</h1>
-
-    <div class="input-group">
-        <input type="text" id="exercise" placeholder="Exercise (e.g., Bench Press)">
-        <div style="display: flex; gap: 10px;">
-            <input type="number" id="weight" placeholder="Weight (kg/lbs)">
-            <input type="number" id="reps" placeholder="Reps">
-        </div>
-        <button id="log-btn">Add Set</button>
+    <div id="dashboard-view" class="view active">
+        <h1 style="margin-bottom: 20px;">My Workouts</h1>
+        <div id="history-list"></div>
+        <button class="fab" onclick="startNewWorkout()">+</button>
     </div>
 
-    <h2>Recent History</h2>
-    <ul id="log-list"></ul>
+    <div id="workout-view" class="view">
+        <h2 style="margin-bottom: 20px;">New Workout</h2>
+        
+        <input type="text" id="workout-name" placeholder="Workout Name (e.g., Push Day)">
+        
+        <div class="card">
+            <h3 style="margin-top:0">Add Set</h3>
+            <input type="text" id="ex-name" placeholder="Exercise (e.g. Bench Press)">
+            <div class="row">
+                <input type="number" id="ex-weight" placeholder="kg/lbs">
+                <input type="number" id="ex-reps" placeholder="Reps">
+            </div>
+            <textarea id="ex-notes" rows="2" placeholder="Notes (optional)..."></textarea>
+            <button class="btn btn-secondary" onclick="addSetToSession()">Add Set</button>
+        </div>
+
+        <h3>Current Session</h3>
+        <div id="current-session-list">
+            <div style="text-align: center; color: var(--text-sub); padding: 20px;">
+                No sets added yet.
+            </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <button class="btn btn-primary" onclick="finishWorkout()">Finish & Save Workout</button>
+            <button class="btn btn-danger" onclick="cancelWorkout()">Cancel</button>
+        </div>
+    </div>
 
     <script>
-        // 1. Select DOM elements
-        const exerciseInput = document.getElementById('exercise');
-        const weightInput = document.getElementById('weight');
-        const repsInput = document.getElementById('reps');
-        const logBtn = document.getElementById('log-btn');
-        const logList = document.getElementById('log-list');
+        // State
+        let workouts = JSON.parse(localStorage.getItem('workouts_v2')) || [];
+        let currentSession = []; // Stores temporary sets for the active workout
 
-        // 2. Load data from LocalStorage on startup
-        let workouts = JSON.parse(localStorage.getItem('workoutData')) || [];
-        renderList();
+        const dashboardView = document.getElementById('dashboard-view');
+        const workoutView = document.getElementById('workout-view');
+        const historyList = document.getElementById('history-list');
+        const currentSessionList = document.getElementById('current-session-list');
 
-        // 3. Add Log Function
-        logBtn.addEventListener('click', () => {
-            const exercise = exerciseInput.value;
-            const weight = weightInput.value;
-            const reps = repsInput.value;
+        // Initial Render
+        renderHistory();
 
-            if (exercise === '' || weight === '' || reps === '') {
-                alert('Please fill in all fields');
+        // --- Navigation Functions ---
+        function showDashboard() {
+            dashboardView.classList.add('active');
+            workoutView.classList.remove('active');
+            renderHistory();
+        }
+
+        function startNewWorkout() {
+            currentSession = [];
+            document.getElementById('workout-name').value = '';
+            document.getElementById('ex-name').value = '';
+            document.getElementById('ex-weight').value = '';
+            document.getElementById('ex-reps').value = '';
+            document.getElementById('ex-notes').value = '';
+            renderCurrentSession();
+            
+            dashboardView.classList.remove('active');
+            workoutView.classList.add('active');
+        }
+
+        function cancelWorkout() {
+            if(confirm("Discard this workout?")) {
+                showDashboard();
+            }
+        }
+
+        // --- Active Workout Logic ---
+        function addSetToSession() {
+            const name = document.getElementById('ex-name').value;
+            const weight = document.getElementById('ex-weight').value;
+            const reps = document.getElementById('ex-reps').value;
+            const notes = document.getElementById('ex-notes').value;
+
+            if(!name || !weight || !reps) {
+                alert("Please fill in Exercise Name, Weight, and Reps.");
                 return;
             }
 
-            const newLog = {
+            // Add to temporary session array
+            currentSession.push({
+                id: Date.now(),
+                exercise: name,
+                weight: weight,
+                reps: reps,
+                notes: notes
+            });
+
+            // Clear inputs except exercise name (easier for next set)
+            document.getElementById('ex-weight').value = '';
+            document.getElementById('ex-notes').value = '';
+            
+            renderCurrentSession();
+        }
+
+        function removeSetFromSession(id) {
+            currentSession = currentSession.filter(s => s.id !== id);
+            renderCurrentSession();
+        }
+
+        function renderCurrentSession() {
+            if (currentSession.length === 0) {
+                currentSessionList.innerHTML = '<div style="text-align: center; color: var(--text-sub); padding: 20px;">No sets added yet.</div>';
+                return;
+            }
+
+            let html = '';
+            // Group by exercise for display
+            // Simple reverse list for now
+            [...currentSession].reverse().forEach(set => {
+                html += `
+                    <div class="card" style="padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: bold; color: var(--primary)">${set.exercise}</div>
+                            <div style="font-size: 14px;">${set.weight}kg x ${set.reps}</div>
+                            ${set.notes ? `<div style="font-size: 12px; color: var(--text-sub)">${set.notes}</div>` : ''}
+                        </div>
+                        <button class="btn btn-danger btn-small" onclick="removeSetFromSession(${set.id})">X</button>
+                    </div>
+                `;
+            });
+            currentSessionList.innerHTML = html;
+        }
+
+        function finishWorkout() {
+            if (currentSession.length === 0) {
+                alert("Add at least one set!");
+                return;
+            }
+            
+            const workoutName = document.getElementById('workout-name').value || "Untitled Workout";
+            
+            const fullWorkout = {
                 id: Date.now(),
                 date: new Date().toLocaleDateString(),
-                exercise,
-                weight,
-                reps
+                name: workoutName,
+                sets: currentSession
             };
 
-            workouts.unshift(newLog); // Add to top of list
-            saveAndRender();
+            workouts.unshift(fullWorkout); // Add to history
+            localStorage.setItem('workouts_v2', JSON.stringify(workouts));
             
-            // Clear inputs (keep exercise name for convenience)
-            weightInput.value = '';
-            repsInput.value = '';
-        });
-
-        // 4. Delete Log Function
-        function deleteLog(id) {
-            if(confirm('Delete this set?')) {
-                workouts = workouts.filter(log => log.id !== id);
-                saveAndRender();
-            }
+            showDashboard();
         }
 
-        // 5. Save to Storage & Update UI
-        function saveAndRender() {
-            localStorage.setItem('workoutData', JSON.stringify(workouts));
-            renderList();
-        }
+        // --- History Logic ---
+        function renderHistory() {
+            historyList.innerHTML = '';
+            workouts.forEach(workout => {
+                // Group sets by exercise name
+                const groups = {};
+                workout.sets.forEach(set => {
+                    if(!groups[set.exercise]) groups[set.exercise] = [];
+                    groups[set.exercise].push(set);
+                });
 
-        function renderList() {
-            logList.innerHTML = '';
-            workouts.forEach(log => {
-                const li = document.createElement('li');
-                li.className = 'log-item';
-                li.innerHTML = `
-                    <div class="log-info">
-                        <span class="log-exercise">${log.exercise}</span>
-                        <span class="log-details">${log.weight} kg x ${log.reps} reps <small>(${log.date})</small></span>
+                let exercisesHtml = '';
+                for (const [name, sets] of Object.entries(groups)) {
+                    let setsHtml = sets.map(s => 
+                        `<div class="set-line">
+                            <span>${s.weight}kg x ${s.reps}</span>
+                            ${s.notes ? `<span class="note-text">${s.notes}</span>` : ''}
+                         </div>`
+                    ).join('');
+                    
+                    exercisesHtml += `
+                        <div class="exercise-group">
+                            <div class="exercise-name">${name}</div>
+                            ${setsHtml}
+                        </div>
+                    `;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">${workout.name}</div>
+                            <div class="card-date">${workout.date}</div>
+                        </div>
+                        <button class="btn btn-danger btn-small" onclick="deleteWorkout(${workout.id})">Delete</button>
                     </div>
-                    <button class="delete-btn" onclick="deleteLog(${log.id})">✕</button>
+                    ${exercisesHtml}
                 `;
-                logList.appendChild(li);
+                historyList.appendChild(card);
             });
+        }
+
+        function deleteWorkout(id) {
+            if(confirm("Delete this entire workout log?")) {
+                workouts = workouts.filter(w => w.id !== id);
+                localStorage.setItem('workouts_v2', JSON.stringify(workouts));
+                renderHistory();
+            }
         }
     </script>
 </body>

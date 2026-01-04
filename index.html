@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Workout Tracker</title>
+    <title>Pro Workout</title>
     <style>
         :root {
             --bg-color: #000000;
             --card-bg: #1c1c1e;
             --primary: #0A84FF;
             --danger: #FF453A;
+            --success: #30d158;
             --text-main: #ffffff;
             --text-sub: #8e8e93;
             --border: #38383a;
@@ -22,77 +23,106 @@
             color: var(--text-main);
             margin: 0;
             padding: 20px;
-            padding-top: 50px; /* Safe area for notch */
-            padding-bottom: 80px;
+            padding-top: 50px;
+            padding-bottom: 100px;
         }
         
-        /* Views Utility */
+        /* Layout & Typography */
+        h1, h2, h3 { margin: 0; font-weight: 700; }
+        h1 { font-size: 28px; margin-bottom: 20px; }
+        h2 { font-size: 22px; margin-bottom: 15px; }
         .view { display: none; }
         .view.active { display: block; }
-
+        .row { display: flex; gap: 8px; align-items: center; }
+        
         /* Buttons */
         .btn {
             width: 100%;
-            padding: 16px;
+            padding: 14px;
             border-radius: 12px;
             border: none;
-            font-size: 17px;
+            font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            margin-bottom: 15px;
+            margin-top: 10px;
+            transition: opacity 0.2s;
         }
+        .btn:active { opacity: 0.7; }
         .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: black; }
         .btn-danger { background: var(--danger); color: white; }
-        .btn-secondary { background: var(--card-bg); color: var(--primary); }
-        .btn-small { width: auto; padding: 8px 16px; font-size: 14px; margin: 0; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-sub); }
+        .btn-small { width: auto; padding: 6px 12px; font-size: 13px; margin: 0; }
 
-        /* Inputs */
-        input, textarea {
-            width: 100%;
-            padding: 14px;
+        /* Form Elements */
+        .input-card {
             background: var(--card-bg);
+            padding: 16px;
+            border-radius: 14px;
+            margin-bottom: 20px;
             border: 1px solid var(--border);
-            border-radius: 10px;
+        }
+        input, textarea {
+            background: #2c2c2e;
+            border: 1px solid #3a3a3c;
             color: white;
+            border-radius: 8px;
+            padding: 10px;
             font-size: 16px;
-            margin-bottom: 12px;
+            width: 100%;
             box-sizing: border-box;
         }
         input:focus { outline: 2px solid var(--primary); border-color: transparent; }
-        .row { display: flex; gap: 10px; }
+        label { font-size: 12px; color: var(--text-sub); display: block; margin-bottom: 4px; margin-top: 8px; }
 
-        /* Cards (History items) */
-        .card {
+        /* Active Session List */
+        .set-row {
+            background: var(--card-bg);
+            margin-bottom: 10px;
+            padding: 12px;
+            border-radius: 10px;
+            position: relative;
+        }
+        .set-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .set-inputs { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 8px; }
+        .mini-input { padding: 8px; font-size: 14px; text-align: center; }
+
+        /* History Cards */
+        .history-card {
             background: var(--card-bg);
             border-radius: 14px;
             padding: 16px;
             margin-bottom: 16px;
         }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .card-title { font-size: 18px; font-weight: 700; }
-        .card-date { color: var(--text-sub); font-size: 14px; }
+        .history-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .history-meta { color: var(--text-sub); font-size: 13px; margin-top: 4px; }
+        .history-actions { display: flex; gap: 8px; }
         
-        /* Exercise Grouping in History */
-        .exercise-group { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
-        .exercise-name { font-weight: 600; color: var(--primary); font-size: 16px; margin-bottom: 4px; }
-        .set-line { font-size: 14px; color: var(--text-sub); display: flex; justify-content: space-between; margin-bottom: 2px; }
-        .note-text { font-size: 12px; color: #aaa; font-style: italic; }
+        .history-summary { font-size: 14px; line-height: 1.5; }
+        .summary-line { display: flex; justify-content: space-between; border-bottom: 1px solid #333; padding: 4px 0; }
+        .summary-line:last-child { border-bottom: none; }
 
-        /* FAB (Floating Action Button) */
+        /* Floating Action Button */
         .fab {
             position: fixed;
             bottom: 30px;
             right: 20px;
             background: var(--primary);
             color: white;
-            width: 60px;
-            height: 60px;
-            border-radius: 30px;
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 30px;
-            box-shadow: 0 4px 12px rgba(10, 132, 255, 0.4);
+            font-size: 28px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             border: none;
             cursor: pointer;
             z-index: 100;
@@ -102,208 +132,280 @@
 <body>
 
     <div id="dashboard-view" class="view active">
-        <h1 style="margin-bottom: 20px;">My Workouts</h1>
+        <h1>My Workouts</h1>
         <div id="history-list"></div>
-        <button class="fab" onclick="startNewWorkout()">+</button>
+        <button class="fab" onclick="createNewWorkout()">+</button>
     </div>
 
-    <div id="workout-view" class="view">
-        <h2 style="margin-bottom: 20px;">New Workout</h2>
-        
-        <input type="text" id="workout-name" placeholder="Workout Name (e.g., Push Day)">
-        
-        <div class="card">
-            <h3 style="margin-top:0">Add Set</h3>
-            <input type="text" id="ex-name" placeholder="Exercise (e.g. Bench Press)">
+    <div id="editor-view" class="view">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <button class="btn btn-outline btn-small" onclick="closeEditor()">Back</button>
+            <h2 style="margin:0" id="editor-title">New Workout</h2>
+            <button class="btn btn-success btn-small" onclick="saveWorkout()">Finish</button>
+        </div>
+
+        <input type="text" id="workout-name" placeholder="Workout Name (e.g. Pull Day)" style="margin-bottom: 20px; font-size: 18px; font-weight: bold;">
+
+        <div class="input-card">
+            <h3 style="margin-bottom: 10px; font-size: 16px;">Add Exercise</h3>
+            
+            <label>Exercise Name</label>
+            <input type="text" id="new-ex-name" placeholder="e.g. Bench Press">
+            
             <div class="row">
-                <input type="number" id="ex-weight" placeholder="kg/lbs">
-                <input type="number" id="ex-reps" placeholder="Reps">
+                <div style="flex:1">
+                    <label>Weight (kg)</label>
+                    <input type="number" id="new-ex-weight" placeholder="0">
+                </div>
+                <div style="flex:1">
+                    <label>Reps</label>
+                    <input type="number" id="new-ex-reps" placeholder="0">
+                </div>
+                <div style="flex:1">
+                    <label>Sets</label>
+                    <input type="number" id="new-ex-sets" value="1">
+                </div>
             </div>
-            <textarea id="ex-notes" rows="2" placeholder="Notes (optional)..."></textarea>
-            <button class="btn btn-secondary" onclick="addSetToSession()">Add Set</button>
+            
+            <button class="btn btn-primary" onclick="addSetsBatch()">Add to Workout</button>
         </div>
 
-        <h3>Current Session</h3>
-        <div id="current-session-list">
-            <div style="text-align: center; color: var(--text-sub); padding: 20px;">
-                No sets added yet.
-            </div>
-        </div>
-
-        <div style="margin-top: 30px;">
-            <button class="btn btn-primary" onclick="finishWorkout()">Finish & Save Workout</button>
-            <button class="btn btn-danger" onclick="cancelWorkout()">Cancel</button>
-        </div>
+        <h3 style="margin-bottom: 10px; font-size: 16px; color: var(--text-sub);">Current Session</h3>
+        <div id="active-list"></div>
+        
+        <br>
+        <button class="btn btn-danger" onclick="deleteCurrentDraft()">Discard Workout</button>
     </div>
 
     <script>
-        // State
-        let workouts = JSON.parse(localStorage.getItem('workouts_v2')) || [];
-        let currentSession = []; // Stores temporary sets for the active workout
+        // --- STATE MANAGEMENT ---
+        let workouts = JSON.parse(localStorage.getItem('workouts_db')) || [];
+        let currentDraft = JSON.parse(localStorage.getItem('current_draft')) || null;
 
+        // DOM Elements
         const dashboardView = document.getElementById('dashboard-view');
-        const workoutView = document.getElementById('workout-view');
-        const historyList = document.getElementById('history-list');
-        const currentSessionList = document.getElementById('current-session-list');
+        const editorView = document.getElementById('editor-view');
+        const activeListEl = document.getElementById('active-list');
+        const historyListEl = document.getElementById('history-list');
 
-        // Initial Render
-        renderHistory();
-
-        // --- Navigation Functions ---
-        function showDashboard() {
-            dashboardView.classList.add('active');
-            workoutView.classList.remove('active');
+        // Initial Load
+        if (currentDraft) {
+            openEditor(true); // Resume draft if exists
+        } else {
             renderHistory();
         }
 
-        function startNewWorkout() {
-            currentSession = [];
-            document.getElementById('workout-name').value = '';
-            document.getElementById('ex-name').value = '';
-            document.getElementById('ex-weight').value = '';
-            document.getElementById('ex-reps').value = '';
-            document.getElementById('ex-notes').value = '';
-            renderCurrentSession();
-            
-            dashboardView.classList.remove('active');
-            workoutView.classList.add('active');
-        }
-
-        function cancelWorkout() {
-            if(confirm("Discard this workout?")) {
-                showDashboard();
-            }
-        }
-
-        // --- Active Workout Logic ---
-        function addSetToSession() {
-            const name = document.getElementById('ex-name').value;
-            const weight = document.getElementById('ex-weight').value;
-            const reps = document.getElementById('ex-reps').value;
-            const notes = document.getElementById('ex-notes').value;
-
-            if(!name || !weight || !reps) {
-                alert("Please fill in Exercise Name, Weight, and Reps.");
-                return;
-            }
-
-            // Add to temporary session array
-            currentSession.push({
+        // --- NAVIGATION ---
+        function createNewWorkout() {
+            // Start fresh
+            currentDraft = {
                 id: Date.now(),
-                exercise: name,
-                weight: weight,
-                reps: reps,
-                notes: notes
-            });
-
-            // Clear inputs except exercise name (easier for next set)
-            document.getElementById('ex-weight').value = '';
-            document.getElementById('ex-notes').value = '';
-            
-            renderCurrentSession();
-        }
-
-        function removeSetFromSession(id) {
-            currentSession = currentSession.filter(s => s.id !== id);
-            renderCurrentSession();
-        }
-
-        function renderCurrentSession() {
-            if (currentSession.length === 0) {
-                currentSessionList.innerHTML = '<div style="text-align: center; color: var(--text-sub); padding: 20px;">No sets added yet.</div>';
-                return;
-            }
-
-            let html = '';
-            // Group by exercise for display
-            // Simple reverse list for now
-            [...currentSession].reverse().forEach(set => {
-                html += `
-                    <div class="card" style="padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-weight: bold; color: var(--primary)">${set.exercise}</div>
-                            <div style="font-size: 14px;">${set.weight}kg x ${set.reps}</div>
-                            ${set.notes ? `<div style="font-size: 12px; color: var(--text-sub)">${set.notes}</div>` : ''}
-                        </div>
-                        <button class="btn btn-danger btn-small" onclick="removeSetFromSession(${set.id})">X</button>
-                    </div>
-                `;
-            });
-            currentSessionList.innerHTML = html;
-        }
-
-        function finishWorkout() {
-            if (currentSession.length === 0) {
-                alert("Add at least one set!");
-                return;
-            }
-            
-            const workoutName = document.getElementById('workout-name').value || "Untitled Workout";
-            
-            const fullWorkout = {
-                id: Date.now(),
-                date: new Date().toLocaleDateString(),
-                name: workoutName,
-                sets: currentSession
+                isNew: true,
+                name: '',
+                sets: []
             };
+            saveDraft();
+            openEditor(false);
+        }
 
-            workouts.unshift(fullWorkout); // Add to history
-            localStorage.setItem('workouts_v2', JSON.stringify(workouts));
+        function openEditor(isResume) {
+            dashboardView.classList.remove('active');
+            editorView.classList.add('active');
             
-            showDashboard();
+            document.getElementById('workout-name').value = currentDraft.name;
+            document.getElementById('editor-title').innerText = currentDraft.isNew ? "New Workout" : "Editing Workout";
+            
+            // Clear Adder Inputs
+            document.getElementById('new-ex-name').value = '';
+            document.getElementById('new-ex-weight').value = '';
+            document.getElementById('new-ex-reps').value = '';
+            document.getElementById('new-ex-sets').value = '1';
+
+            renderActiveList();
         }
 
-        // --- History Logic ---
-        function renderHistory() {
-            historyList.innerHTML = '';
-            workouts.forEach(workout => {
-                // Group sets by exercise name
-                const groups = {};
-                workout.sets.forEach(set => {
-                    if(!groups[set.exercise]) groups[set.exercise] = [];
-                    groups[set.exercise].push(set);
-                });
-
-                let exercisesHtml = '';
-                for (const [name, sets] of Object.entries(groups)) {
-                    let setsHtml = sets.map(s => 
-                        `<div class="set-line">
-                            <span>${s.weight}kg x ${s.reps}</span>
-                            ${s.notes ? `<span class="note-text">${s.notes}</span>` : ''}
-                         </div>`
-                    ).join('');
-                    
-                    exercisesHtml += `
-                        <div class="exercise-group">
-                            <div class="exercise-name">${name}</div>
-                            ${setsHtml}
-                        </div>
-                    `;
-                }
-
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">${workout.name}</div>
-                            <div class="card-date">${workout.date}</div>
-                        </div>
-                        <button class="btn btn-danger btn-small" onclick="deleteWorkout(${workout.id})">Delete</button>
-                    </div>
-                    ${exercisesHtml}
-                `;
-                historyList.appendChild(card);
-            });
-        }
-
-        function deleteWorkout(id) {
-            if(confirm("Delete this entire workout log?")) {
-                workouts = workouts.filter(w => w.id !== id);
-                localStorage.setItem('workouts_v2', JSON.stringify(workouts));
+        function closeEditor() {
+            if (confirm("Save changes to draft and go back?")) {
+                updateDraftFromUI(); // Ensure text inputs are saved
+                dashboardView.classList.add('active');
+                editorView.classList.remove('active');
                 renderHistory();
             }
         }
+
+        // --- CORE LOGIC ---
+
+        function addSetsBatch() {
+            const name = document.getElementById('new-ex-name').value;
+            const weight = document.getElementById('new-ex-weight').value;
+            const reps = document.getElementById('new-ex-reps').value;
+            const setsCount = parseInt(document.getElementById('new-ex-sets').value) || 1;
+
+            if (!name) { alert("Enter an exercise name"); return; }
+
+            for (let i = 0; i < setsCount; i++) {
+                currentDraft.sets.push({
+                    id: Date.now() + i, // Unique ID for each set
+                    exercise: name,
+                    weight: weight,
+                    reps: reps,
+                    notes: ''
+                });
+            }
+
+            // Keep exercise name for next set, clear others
+            document.getElementById('new-ex-weight').value = '';
+            document.getElementById('new-ex-reps').value = '';
+            
+            saveDraft();
+            renderActiveList();
+        }
+
+        function renderActiveList() {
+            activeListEl.innerHTML = '';
+            
+            // Render sets in REVERSE order so newest is top (or normal order? Let's do normal for editing)
+            // Actually, for a planner, Normal order (top to bottom) is better.
+            currentDraft.sets.forEach((set, index) => {
+                const div = document.createElement('div');
+                div.className = 'set-row';
+                div.innerHTML = `
+                    <div class="set-header">
+                        <span>${set.exercise} <small style="color:var(--text-sub)">#${index + 1}</small></span>
+                        <span onclick="removeSet(${index})" style="color:var(--danger); cursor:pointer;">✕</span>
+                    </div>
+                    <div class="set-inputs">
+                        <input type="number" class="mini-input" value="${set.weight}" placeholder="kg" oninput="updateSet(${index}, 'weight', this.value)">
+                        <input type="number" class="mini-input" value="${set.reps}" placeholder="reps" oninput="updateSet(${index}, 'reps', this.value)">
+                        <input type="text" class="mini-input" value="${set.notes}" placeholder="Notes..." oninput="updateSet(${index}, 'notes', this.value)">
+                    </div>
+                `;
+                activeListEl.appendChild(div);
+            });
+        }
+
+        // Live Update & Auto-Save
+        window.updateSet = function(index, field, value) {
+            currentDraft.sets[index][field] = value;
+            saveDraft(); // Auto-save on every keystroke
+        };
+
+        window.updateDraftFromUI = function() {
+            currentDraft.name = document.getElementById('workout-name').value;
+            saveDraft();
+        }
+        
+        // Listen for name changes
+        document.getElementById('workout-name').addEventListener('input', updateDraftFromUI);
+
+        function removeSet(index) {
+            currentDraft.sets.splice(index, 1);
+            saveDraft();
+            renderActiveList();
+        }
+
+        function saveDraft() {
+            localStorage.setItem('current_draft', JSON.stringify(currentDraft));
+        }
+
+        function deleteCurrentDraft() {
+            if(confirm("Discard everything?")) {
+                localStorage.removeItem('current_draft');
+                currentDraft = null;
+                location.reload(); // Quick reset
+            }
+        }
+
+        function saveWorkout() {
+            updateDraftFromUI();
+            if (currentDraft.sets.length === 0) { alert("Workout is empty!"); return; }
+
+            const finalName = currentDraft.name || "Untitled Workout";
+            const finalDate = new Date().toLocaleDateString();
+
+            // Prepare final object
+            const record = {
+                id: currentDraft.isNew ? Date.now() : currentDraft.id,
+                date: currentDraft.originalDate || finalDate, // Keep original date if editing
+                name: finalName,
+                sets: currentDraft.sets
+            };
+
+            if (currentDraft.isNew) {
+                workouts.unshift(record); // Add new to top
+            } else {
+                // Find and update existing
+                const index = workouts.findIndex(w => w.id === currentDraft.id);
+                if (index !== -1) workouts[index] = record;
+            }
+
+            // Commit to DB and Clear Draft
+            localStorage.setItem('workouts_db', JSON.stringify(workouts));
+            localStorage.removeItem('current_draft');
+            currentDraft = null;
+            
+            // Return to dashboard
+            dashboardView.classList.add('active');
+            editorView.classList.remove('active');
+            renderHistory();
+        }
+
+        // --- HISTORY LOGIC ---
+
+        function renderHistory() {
+            historyListEl.innerHTML = '';
+            workouts.forEach(w => {
+                // Summary calculation
+                const totalSets = w.sets.length;
+                const uniqueExercises = [...new Set(w.sets.map(s => s.exercise))];
+
+                const div = document.createElement('div');
+                div.className = 'history-card';
+                div.innerHTML = `
+                    <div class="history-header">
+                        <div>
+                            <div style="font-weight:bold; font-size:18px;">${w.name}</div>
+                            <div class="history-meta">${w.date} • ${totalSets} Sets</div>
+                        </div>
+                        <div class="history-actions">
+                            <button class="btn btn-outline btn-small" onclick="editHistoryItem(${w.id})">Edit</button>
+                            <button class="btn btn-danger btn-small" style="width:30px; padding:6px 0;" onclick="deleteHistoryItem(${w.id})">🗑</button>
+                        </div>
+                    </div>
+                    <div class="history-summary">
+                        ${uniqueExercises.map(ex => {
+                             const bestSet = w.sets.filter(s => s.exercise === ex).reduce((prev, current) => (Number(current.weight) > Number(prev.weight) ? current : prev));
+                             return `<div class="summary-line"><span>${ex}</span> <span style="color:var(--text-sub)">Top: ${bestSet.weight}kg</span></div>`
+                        }).join('')}
+                    </div>
+                `;
+                historyListEl.appendChild(div);
+            });
+        }
+
+        window.editHistoryItem = function(id) {
+            const workoutToEdit = workouts.find(w => w.id === id);
+            if (!workoutToEdit) return;
+
+            // Load into draft
+            currentDraft = {
+                id: workoutToEdit.id,
+                isNew: false,
+                originalDate: workoutToEdit.date,
+                name: workoutToEdit.name,
+                sets: JSON.parse(JSON.stringify(workoutToEdit.sets)) // Deep copy
+            };
+            saveDraft();
+            openEditor(true);
+        };
+
+        window.deleteHistoryItem = function(id) {
+            if (confirm("Delete this workout log permanently?")) {
+                workouts = workouts.filter(w => w.id !== id);
+                localStorage.setItem('workouts_db', JSON.stringify(workouts));
+                renderHistory();
+            }
+        };
     </script>
 </body>
 </html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Gym Log</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-color: #1e1e1e;
+            --primary: #0A84FF;
+            --text-main: #ffffff;
+            --text-sub: #a0a0a0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            padding-top: 60px; /* Space for status bar */
+            -webkit-tap-highlight-color: transparent;
+        }
+        h1 { font-size: 24px; margin-bottom: 20px; font-weight: 700; }
+        
+        /* Input Form Styles */
+        .input-group {
+            background: var(--card-color);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #2c2c2e;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input:focus { outline: 2px solid var(--primary); }
+        
+        button#log-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button#log-btn:active { opacity: 0.8; }
+
+        /* Log List Styles */
+        h2 { font-size: 18px; color: var(--text-sub); margin-bottom: 10px; }
+        #log-list { list-style: none; padding: 0; }
+        
+        .log-item {
+            background: var(--card-color);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+        .log-info { display: flex; flex-direction: column; }
+        .log-exercise { font-weight: 600; font-size: 17px; }
+        .log-details { color: var(--text-sub); font-size: 14px; margin-top: 4px; }
+        .delete-btn {
+            background: #ff453a;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <h1>Workout Logger</h1>
+
+    <div class="input-group">
+        <input type="text" id="exercise" placeholder="Exercise (e.g., Bench Press)">
+        <div style="display: flex; gap: 10px;">
+            <input type="number" id="weight" placeholder="Weight (kg/lbs)">
+            <input type="number" id="reps" placeholder="Reps">
+        </div>
+        <button id="log-btn">Add Set</button>
+    </div>
+
+    <h2>Recent History</h2>
+    <ul id="log-list"></ul>
+
+    <script>
+        // 1. Select DOM elements
+        const exerciseInput = document.getElementById('exercise');
+        const weightInput = document.getElementById('weight');
+        const repsInput = document.getElementById('reps');
+        const logBtn = document.getElementById('log-btn');
+        const logList = document.getElementById('log-list');
+
+        // 2. Load data from LocalStorage on startup
+        let workouts = JSON.parse(localStorage.getItem('workoutData')) || [];
+        renderList();
+
+        // 3. Add Log Function
+        logBtn.addEventListener('click', () => {
+            const exercise = exerciseInput.value;
+            const weight = weightInput.value;
+            const reps = repsInput.value;
+
+            if (exercise === '' || weight === '' || reps === '') {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            const newLog = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString(),
+                exercise,
+                weight,
+                reps
+            };
+
+            workouts.unshift(newLog); // Add to top of list
+            saveAndRender();
+            
+            // Clear inputs (keep exercise name for convenience)
+            weightInput.value = '';
+            repsInput.value = '';
+        });
+
+        // 4. Delete Log Function
+        function deleteLog(id) {
+            if(confirm('Delete this set?')) {
+                workouts = workouts.filter(log => log.id !== id);
+                saveAndRender();
+            }
+        }
+
+        // 5. Save to Storage & Update UI
+        function saveAndRender() {
+            localStorage.setItem('workoutData', JSON.stringify(workouts));
+            renderList();
+        }
+
+        function renderList() {
+            logList.innerHTML = '';
+            workouts.forEach(log => {
+                const li = document.createElement('li');
+                li.className = 'log-item';
+                li.innerHTML = `
+                    <div class="log-info">
+                        <span class="log-exercise">${log.exercise}</span>
+                        <span class="log-details">${log.weight} kg x ${log.reps} reps <small>(${log.date})</small></span>
+                    </div>
+                    <button class="delete-btn" onclick="deleteLog(${log.id})">✕</button>
+                `;
+                logList.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>

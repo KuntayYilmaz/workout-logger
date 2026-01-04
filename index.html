@@ -14,7 +14,7 @@
             --danger: #FF453A;
             --success: #30d158;
             --text-main: #ffffff;
-            --text-sub: #8e8e93;
+            --text-sub: #98989d;
             --border: #38383a;
         }
         body {
@@ -30,7 +30,6 @@
         /* Layout & Typography */
         h1, h2, h3 { margin: 0; font-weight: 700; }
         h1 { font-size: 28px; margin-bottom: 20px; }
-        h2 { font-size: 22px; margin-bottom: 15px; }
         .view { display: none; }
         .view.active { display: block; }
         .row { display: flex; gap: 8px; align-items: center; }
@@ -100,13 +99,22 @@
             padding: 16px;
             margin-bottom: 16px;
         }
-        .history-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .history-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 10px; }
         .history-meta { color: var(--text-sub); font-size: 13px; margin-top: 4px; }
         .history-actions { display: flex; gap: 8px; }
         
+        /* Updated Summary Styles */
         .history-summary { font-size: 14px; line-height: 1.5; }
-        .summary-line { display: flex; justify-content: space-between; border-bottom: 1px solid #333; padding: 4px 0; }
+        .summary-line { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 6px 0; 
+            border-bottom: 1px solid #2c2c2e;
+            align-items: flex-start;
+        }
         .summary-line:last-child { border-bottom: none; }
+        .ex-name { font-weight: 600; width: 35%; color: #e1e1e1; }
+        .ex-sets { width: 65%; text-align: right; color: var(--text-sub); font-size: 13px; }
 
         /* Floating Action Button */
         .fab {
@@ -140,7 +148,7 @@
     <div id="editor-view" class="view">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <button class="btn btn-outline btn-small" onclick="closeEditor()">Back</button>
-            <h2 style="margin:0" id="editor-title">New Workout</h2>
+            <h2 style="margin:0; font-size: 18px;" id="editor-title">New Workout</h2>
             <button class="btn btn-success btn-small" onclick="saveWorkout()">Finish</button>
         </div>
 
@@ -226,7 +234,7 @@
 
         function closeEditor() {
             if (confirm("Save changes to draft and go back?")) {
-                updateDraftFromUI(); // Ensure text inputs are saved
+                updateDraftFromUI();
                 dashboardView.classList.add('active');
                 editorView.classList.remove('active');
                 renderHistory();
@@ -245,7 +253,7 @@
 
             for (let i = 0; i < setsCount; i++) {
                 currentDraft.sets.push({
-                    id: Date.now() + i, // Unique ID for each set
+                    id: Date.now() + i, 
                     exercise: name,
                     weight: weight,
                     reps: reps,
@@ -253,7 +261,6 @@
                 });
             }
 
-            // Keep exercise name for next set, clear others
             document.getElementById('new-ex-weight').value = '';
             document.getElementById('new-ex-reps').value = '';
             
@@ -264,8 +271,6 @@
         function renderActiveList() {
             activeListEl.innerHTML = '';
             
-            // Render sets in REVERSE order so newest is top (or normal order? Let's do normal for editing)
-            // Actually, for a planner, Normal order (top to bottom) is better.
             currentDraft.sets.forEach((set, index) => {
                 const div = document.createElement('div');
                 div.className = 'set-row';
@@ -284,10 +289,9 @@
             });
         }
 
-        // Live Update & Auto-Save
         window.updateSet = function(index, field, value) {
             currentDraft.sets[index][field] = value;
-            saveDraft(); // Auto-save on every keystroke
+            saveDraft(); 
         };
 
         window.updateDraftFromUI = function() {
@@ -295,7 +299,6 @@
             saveDraft();
         }
         
-        // Listen for name changes
         document.getElementById('workout-name').addEventListener('input', updateDraftFromUI);
 
         function removeSet(index) {
@@ -312,7 +315,7 @@
             if(confirm("Discard everything?")) {
                 localStorage.removeItem('current_draft');
                 currentDraft = null;
-                location.reload(); // Quick reset
+                location.reload(); 
             }
         }
 
@@ -323,41 +326,53 @@
             const finalName = currentDraft.name || "Untitled Workout";
             const finalDate = new Date().toLocaleDateString();
 
-            // Prepare final object
             const record = {
                 id: currentDraft.isNew ? Date.now() : currentDraft.id,
-                date: currentDraft.originalDate || finalDate, // Keep original date if editing
+                date: currentDraft.originalDate || finalDate, 
                 name: finalName,
                 sets: currentDraft.sets
             };
 
             if (currentDraft.isNew) {
-                workouts.unshift(record); // Add new to top
+                workouts.unshift(record);
             } else {
-                // Find and update existing
                 const index = workouts.findIndex(w => w.id === currentDraft.id);
                 if (index !== -1) workouts[index] = record;
             }
 
-            // Commit to DB and Clear Draft
             localStorage.setItem('workouts_db', JSON.stringify(workouts));
             localStorage.removeItem('current_draft');
             currentDraft = null;
             
-            // Return to dashboard
             dashboardView.classList.add('active');
             editorView.classList.remove('active');
             renderHistory();
         }
 
-        // --- HISTORY LOGIC ---
+        // --- HISTORY LOGIC (UPDATED) ---
 
         function renderHistory() {
             historyListEl.innerHTML = '';
             workouts.forEach(w => {
-                // Summary calculation
                 const totalSets = w.sets.length;
-                const uniqueExercises = [...new Set(w.sets.map(s => s.exercise))];
+                
+                // Group sets by exercise name
+                const groups = {};
+                w.sets.forEach(s => {
+                    if(!groups[s.exercise]) groups[s.exercise] = [];
+                    // Format: "50kg x 12"
+                    groups[s.exercise].push(`${s.weight}kg x ${s.reps}`);
+                });
+
+                // Create the summary HTML
+                const summaryHtml = Object.entries(groups).map(([name, setStrings]) => {
+                    return `
+                        <div class="summary-line">
+                            <span class="ex-name">${name}</span>
+                            <span class="ex-sets">${setStrings.join(', ')}</span>
+                        </div>
+                    `;
+                }).join('');
 
                 const div = document.createElement('div');
                 div.className = 'history-card';
@@ -373,10 +388,7 @@
                         </div>
                     </div>
                     <div class="history-summary">
-                        ${uniqueExercises.map(ex => {
-                             const bestSet = w.sets.filter(s => s.exercise === ex).reduce((prev, current) => (Number(current.weight) > Number(prev.weight) ? current : prev));
-                             return `<div class="summary-line"><span>${ex}</span> <span style="color:var(--text-sub)">Top: ${bestSet.weight}kg</span></div>`
-                        }).join('')}
+                        ${summaryHtml}
                     </div>
                 `;
                 historyListEl.appendChild(div);
@@ -387,13 +399,12 @@
             const workoutToEdit = workouts.find(w => w.id === id);
             if (!workoutToEdit) return;
 
-            // Load into draft
             currentDraft = {
                 id: workoutToEdit.id,
                 isNew: false,
                 originalDate: workoutToEdit.date,
                 name: workoutToEdit.name,
-                sets: JSON.parse(JSON.stringify(workoutToEdit.sets)) // Deep copy
+                sets: JSON.parse(JSON.stringify(workoutToEdit.sets))
             };
             saveDraft();
             openEditor(true);
